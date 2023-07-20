@@ -1,0 +1,55 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
+parameters:
+    container.dumper.inline_factories: true
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            $debug: '%kernel.debug%'
+
+    App\:
+        resource: '../src/{Domain,Application}/**/*{Interface,Service,Handler,Mapper}.php'
+
+    App\Domain\:
+        resource: '../src/Domain/**/Service/*.php'
+
+    App\Infrastructure\:
+        resource: '../src/Infrastructure/*'
+        exclude: '../src/Infrastructure/{Migrations,Tests,Kernel.php}'
+
+    App\Infrastructure\Controller\:
+        resource: '../src/Infrastructure/Controller/**/*Controller.php'
+        tags: ['controller.service_arguments']
+
+    App\Infrastructure\EventSubscriber\Core\DomainEventSubscriber:
+        tags: ['doctrine.event_subscriber']
+
+    _instanceof:
+        App\Domain\Common\Service\RepositoryInterface:
+            tags: ['doctrine.repository_service']
+
+        App\Application\Common\IntegrationEventMapperInterface:
+            tags: ['app.application.integration_event_mapper']
+
+        # "priority: 1" is used in order to be able to overwrite any parameter without indicating priority
+        # e.g. #[AsMessageHandler(fromTransport: 'async')]
+        App\Application\Common\UseCase\HandlerInterface:
+            tags: [{ name: 'messenger.message_handler', bus: 'useCase.bus', priority: 1 }]
+
+        App\Application\Common\DomainEventHandler\HandlerInterface:
+            tags: [{ name: 'messenger.message_handler', bus: 'domain.event.bus', priority: 1 }]
+
+        App\Application\Common\IntegrationEventHandler\HandlerInterface:
+            tags: [{ name: 'messenger.message_handler', bus: 'integration.event.bus', priority: 1 }]
+
+    App\Domain\User\UserRepositoryInterface:
+        class: App\Infrastructure\Repository\User\UserRepository
+
+    App\Infrastructure\OAuth2\Decorator\RefreshTokenRepositoryDecorator:
+        decorates: 'league.oauth2_server.repository.refresh_token'

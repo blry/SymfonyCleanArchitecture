@@ -1,0 +1,10 @@
+knpu_oauth2_client:
+    clients:
+        telegram:
+            type: generic
+            provider_class: App\Infrastructure\OAuth2\Client\Telegram\TelegramProvider
+            client_id: '%env(TELEGRAM_BOT_NAME)%'
+            client_secret: '%env(TELEGRAM_BOT_TOKEN)%'
+            redirect_route: user.v1.me
+            redirect_params: {}
+            use_state: false

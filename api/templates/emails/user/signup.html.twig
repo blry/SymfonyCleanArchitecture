@@ -1,0 +1,14 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block body %}
+    <h1>Здравствуйте, {{ user.nickname }}!</h1>
+
+    <p>Поздравляем! Вы успешно зарегистрировали на {{ brand }}.</p>
+
+    <p>Теперь вы можете <a href="{{ frontend_url }}/login" about="_blank">авторизоваться</a> и получить доступ к {{ brand }}.</p>
+
+    <p>
+        С наилучшими пожеланиями,<br>
+        команда {{ brand }}.
+    </p>
+{% endblock %}

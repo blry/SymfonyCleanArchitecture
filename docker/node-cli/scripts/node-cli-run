@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+echo "Node-CLI container is running"
+
+tail -f /dev/null

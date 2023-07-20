@@ -1,0 +1,25 @@
+api:
+  insecure: true
+  dashboard: false
+
+providers:
+  docker:
+    exposedByDefault: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  myresolver:
+    acme:
+      email: x@blry.md
+      httpChallenge:
+        entryPoint: web
+      storage: acme.json

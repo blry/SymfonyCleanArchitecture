@@ -1,0 +1,35 @@
+nelmio_api_doc:
+    models: { use_jms: false }
+    documentation:
+        info:
+            title: 'Symfony Clean Architecture'
+            version: '1.0.3'
+        components:
+            securitySchemes:
+                OAuth2:
+                    type: 'oauth2'
+                    description: 'Provides a password flow access_token'
+                    flows:
+                        password:
+                            tokenUrl: '%env(HTTP_X_FORWARDED_PROTO)%://%env(HTTP_X_FORWARDED_HOST)%/user/v1/oauth2/token'
+                            refreshUrl: '%env(HTTP_X_FORWARDED_PROTO)%://%env(HTTP_X_FORWARDED_HOST)%/user/v1/oauth2/token'
+                            scopes:
+                                public: 'Default scope'
+                                offline_access: 'If included, refresh_token will be present'
+#                        clientCredentials:
+#                            tokenUrl: '%env(HTTP_X_FORWARDED_PROTO)%://%env(HTTP_X_FORWARDED_HOST)%/oauth/v2/token'
+#                            scopes:
+#                                public: 'Default scope'
+#                                offline_access: 'If included, refresh_token will be present'
+#
+#                client_credentials:
+#                    type: 'oauth2'
+#                    description: 'Provides a client_credentials flow access_token'
+#                    flow: 'application'
+#                    tokenUrl: '%env(HTTP_X_FORWARDED_PROTO)%://%env(HTTP_X_FORWARDED_HOST)%/oauth/v2/token'
+        security:
+            - password: []
+    areas: # to filter documented areas
+        default:
+            path_patterns:
+                - ^/(?!(_|doc))

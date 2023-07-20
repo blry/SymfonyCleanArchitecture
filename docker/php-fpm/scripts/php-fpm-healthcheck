@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+SCRIPT_NAME=/health SCRIPT_FILENAME=/health REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -c OK || exit 1

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+DB_APP_PASSWORD=$(cat "$DB_APP_PASSWORD_FILE")
+OAUTH2_ENCRYPTION_KEY=$(cat "$OAUTH2_ENCRYPTION_KEY_FILE")
+TELEGRAM_BOT_TOKEN=$(cat $TELEGRAM_BOT_TOKEN_FILE)
+
+{
+  echo "";
+  echo "export DB_APP_PASSWORD=$DB_APP_PASSWORD";
+  echo "";
+  echo "export OAUTH2_ENCRYPTION_KEY=$OAUTH2_ENCRYPTION_KEY";
+  echo "";
+  echo "export TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN";
+  echo "";
+  echo "cd /var/www/api"
+} >> ~/.bashrc
+
+echo "PHP-CLI container is running"
+
+bash -ilc "/var/www/api/bin/console cache:clear && /var/www/api/bin/console cache:warmup"
+
+sleep 10
+
+bash -ilc "/var/www/api/bin/console messenger:consume --time-limit=3600 -n -vv async" || \
+tail -f /dev/null

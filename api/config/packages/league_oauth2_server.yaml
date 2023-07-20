@@ -1,0 +1,31 @@
+league_oauth2_server:
+    authorization_server:
+        private_key: '%env(string:OAUTH2_PRIVATE_KEY_FILE)%'
+        private_key_passphrase: null
+        encryption_key: '%env(string:OAUTH2_ENCRYPTION_KEY)%'
+        access_token_ttl: '%env(string:OAUTH2_ACCESS_TOKEN_TTL)%'
+        refresh_token_ttl: '%env(string:OAUTH2_REFRESH_TOKEN_TTL)%'
+
+        enable_client_credentials_grant: true
+        enable_password_grant: true
+        enable_refresh_token_grant: true
+        persist_access_token: false
+
+    role_prefix: 'ROLE_OAUTH2_'
+
+    # Client scopes
+    scopes:
+        available: !php/const App\Infrastructure\OAuth2\ScopeEnum::AVAILABLE
+        default: !php/const App\Infrastructure\OAuth2\ScopeEnum::DEFAULT
+
+    resource_server:
+        public_key: '%env(string:OAUTH2_PUBLIC_KEY_FILE)%'
+
+    persistence:
+        doctrine:
+            entity_manager: default
+
+when@test:
+    league_oauth2_server:
+        persistence:
+            in_memory: null

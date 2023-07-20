@@ -1,0 +1,203 @@
+version: '3.4'
+
+secrets:
+
+  db_root_password:
+    file: ${DB_ROOT_PASSWORD_FILE}
+  db_password:
+    file: ${DB_APP_PASSWORD_FILE}
+  oauth2_encryption.key:
+    file: ${OAUTH2_ENCRYPTION_KEY_FILE}
+  oauth2_private.key:
+    file: ${OAUTH2_PRIVATE_KEY_FILE}
+  oauth2_public.key:
+    file: ${OAUTH2_PUBLIC_KEY_FILE}
+  telegram_bot_token:
+    file: ${TELEGRAM_BOT_TOKEN_FILE}
+
+services:
+
+  traefik:
+    image: traefik:latest
+    network_mode: host # 80, 443, 8080,
+    command:
+      - --pilot.token=${TRAEFIK_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/traefik/configs/${CONTAINER_ENV}/traefik.yaml:/etc/traefik/traefik.yaml
+
+  nginx:
+    build:
+      context: ./docker/nginx
+    restart: on-failure
+    volumes:
+      - ./api/:/var/www/api/
+      - ./docker/nginx/configs/${CONTAINER_ENV}/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/configs/${CONTAINER_ENV}/sites/:/etc/nginx/sites-available/
+      - ./docker/shared/data/logs/nginx/:/var/log/nginx/
+    depends_on:
+      - php-fpm
+    network_mode: host # 8082
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard-api.rule=Host(`${TRAEFIK_API_HOST}`)
+      - traefik.http.routers.dashboard-api.tls.certresolver=myresolver
+      - traefik.http.services.nginx.loadbalancer.server.port=8082
+
+  php-fpm:
+    build:
+      context: ./docker/php-fpm
+      args:
+        - TIMEZONE=${TIMEZONE}
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - PHP_VERSION=${PHP_VERSION}
+        - XDEBUG_ENABLED=${XDEBUG_ENABLED}
+    restart: on-failure
+    volumes:
+      - ./api/:/var/www/api/
+      - ./docker/shared/configs/${CONTAINER_ENV}/php/php.ini:/usr/local/etc/php/php.ini
+      - ./docker/php-fpm/configs/${CONTAINER_ENV}/custom.php.ini:/usr/local/etc/php/conf.d/custom.php.ini
+      - ./docker/php-fpm/configs/${CONTAINER_ENV}/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-docker.conf
+      - ./docker/shared/data/logs/php-fpm/php-fpm/:/var/log/php-fpm/
+      - ./docker/shared/data/logs/php-fpm/xdebug/:/var/log/xdebug/
+    environment:
+      - XDEBUG_CONFIG
+      - PHP_IDE_CONFIG
+      - APP_ENV
+      - DB_APP_HOST
+      - DB_APP_PORT
+      - DB_APP_DATABASE
+      - DB_APP_USER
+      - DB_APP_PASSWORD_FILE=/run/secrets/db_password
+      - OAUTH2_ENCRYPTION_KEY_FILE=/run/secrets/oauth2_encryption.key
+      - OAUTH2_PRIVATE_KEY_FILE=/run/secrets/oauth2_private.key
+      - OAUTH2_PUBLIC_KEY_FILE=/run/secrets/oauth2_public.key
+      - TELEGRAM_BOT_NAME
+      - TELEGRAM_CHAT_ID
+      - TELEGRAM_BOT_TOKEN_FILE=/run/secrets/telegram_bot_token
+    secrets:
+      - db_password
+      - oauth2_encryption.key
+      - oauth2_private.key
+      - oauth2_public.key
+      - telegram_bot_token
+    network_mode: host # 9000
+
+  mailer:
+    image: mailhog/mailhog
+    network_mode: host # 1025, 8025
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/ofelia/configs/${CONTAINER_ENV}/config.ini:/etc/ofelia/config.ini:ro
+    depends_on:
+      - php-cli
+    command: daemon --config=/etc/ofelia/config.ini
+
+  php-cli:
+    container_name: r-php-cli
+    build:
+      context: ./docker/php-cli
+      args:
+        - TIMEZONE=${TIMEZONE}
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - PHP_VERSION=${PHP_VERSION}
+        - XDEBUG_ENABLED=${XDEBUG_ENABLED}
+    restart: always
+    volumes:
+      - ./api/:/var/www/api/
+      - ./docker/shared/configs/${CONTAINER_ENV}/php/php.ini:/usr/local/etc/php/php.ini
+      - ./docker/php-cli/configs/${CONTAINER_ENV}/custom.php.ini:/usr/local/etc/php/conf.d/custom.php.ini
+      - ./docker/shared/data/logs/php-cli/xdebug/:/var/log/xdebug/
+    environment:
+      - XDEBUG_CONFIG
+      - PHP_IDE_CONFIG
+      - APP_ENV
+      - DB_APP_HOST
+      - DB_APP_PORT
+      - DB_APP_DATABASE
+      - DB_APP_USER
+      - DB_APP_PASSWORD_FILE=/run/secrets/db_password
+      - OAUTH2_ENCRYPTION_KEY_FILE=/run/secrets/oauth2_encryption.key
+      - OAUTH2_PRIVATE_KEY_FILE=/run/secrets/oauth2_private.key
+      - OAUTH2_PUBLIC_KEY_FILE=/run/secrets/oauth2_public.key
+      - TELEGRAM_BOT_NAME
+      - TELEGRAM_CHAT_ID
+      - TELEGRAM_BOT_TOKEN_FILE=/run/secrets/telegram_bot_token
+    secrets:
+      - db_password
+      - oauth2_encryption.key
+      - oauth2_private.key
+      - oauth2_public.key
+      - telegram_bot_token
+    network_mode: host
+
+  mysql:
+    container_name: r-mysql
+    build:
+      context: ./docker/mysql
+      args:
+        - TIMEZONE=${TIMEZONE}
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - MARIADB_VERSION=${MARIADB_VERSION}
+    restart: on-failure
+    volumes:
+      - ./docker/mysql/configs/${CONTAINER_ENV}/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ${MYSQL_LOCAL_DATA_PATH}:/var/lib/mysql/
+      - ./docker/shared/data/logs/mysql/:/var/log/mysql
+    environment:
+      - MYSQL_TCP_PORT=${DB_APP_PORT}
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
+      - MYSQL_DATABASE=${DB_APP_DATABASE}
+      - MYSQL_USER=${DB_APP_USER}
+      - MYSQL_PASSWORD_FILE=/run/secrets/db_password
+      - MYSQL_INITDB_SKIP_TZINFO
+    secrets:
+      - db_root_password
+      - db_password
+    network_mode: host
+
+#  postgres:
+#    container_name: r-postgres
+#    build:
+#      context: ./docker/postgres
+#      args:
+#        - TIMEZONE=${TIMEZONE}
+#        - PUID=${PUID}
+#        - PGID=${PGID}
+#        - POSTGRES_VERSION=${POSTGRES_VERSION}
+#    restart: on-failure
+#    environment:
+#      - PGPORT=${DB_APP_PORT}
+#      - PGDATA=/var/lib/postgresql/data/app
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD_FILE=/run/secrets/db_root_password
+#      - POSTGRES_DB=postgres
+#      - DB_APP_DATABASE
+#      - DB_APP_USER
+#      - DB_APP_PASSWORD_FILE=/run/secrets/db_password
+#    volumes:
+#      - ./docker/postgres/configs/${CONTAINER_ENV}/my.conf:/etc/postgresql/my.conf
+#      - ${POSTGRES_LOCAL_DATA_PATH}:/var/lib/postgresql/data
+#      - ./docker/shared/data/logs/postgres/:/var/log/postgresql
+#    secrets:
+#      - db_root_password
+#      - db_password
+#    network_mode: host
+
+#  node-cli:
+#    build:
+#      context: ./docker/node-cli
+#      args:
+#        - TIMEZONE=${TIMEZONE}
+#        - PUID=${PUID}
+#        - PGID=${PGID}
+#        - NODE_VERSION=${NODE_VERSION}
+#    volumes:
+#      - ./api/:/var/www/api/
+#    network_mode: host

@@ -1,0 +1,23 @@
+security:
+    password_hashers:
+        App\Domain\User\User:
+            algorithm: bcrypt
+
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Domain\User\User
+
+    firewalls:
+        unsecure:
+            pattern: ^/((_(profiler|wdt)|css|images|js|doc|oauth/v2/token))
+            security: false
+
+        main:
+            lazy: true
+            security: true
+            stateless: true
+            oauth2: true
+
+    access_control:
+        # - { path: ^/profile, roles: ROLE_USER }
