@@ -28,7 +28,6 @@ It includes the implementation of the `social` grant, designed specifically to h
 - [Learn more](#learn-more)
   * [Domain Events vs Integration Events vs Infrastructure Events](#domain-events-vs-integration-events-vs-infrastructure-events)
   * [How to make an Event to be asynchronous?](#how-to-make-an-event-to-be-asynchronous)
-  * [Application Services vs Domain Services](#application-services-vs-domain-services)
   * [Related links](#related-links)
 
 ## Project structure
@@ -70,8 +69,8 @@ git clone https://github.com/pikaso443/retrans-live
 ```
 
 2. Create `.env` file in the root folder and set <b>your</b> variables by copying [.env.dev_local](.env.dev_local)
-- `TRAEFIK_API_HOST` - Traefik will use the variable to create a certificate with [Let's Encrypt](https://letsencrypt.org/about/). Make sure DNS records are set correctly.
 - `TRAEFIK_TOKEN` - Traefik token
+- `TRAEFIK_API_HOST` - Traefik will use the variable to create a certificate with [Let's Encrypt](https://letsencrypt.org/about/). Make sure DNS records are set correctly.
 
 3. Create [secrets](https://docs.docker.com/compose/use-secrets/) in [docker/shared/secrets/](docker/shared/secrets/):
 - `db_root_password`, `db_password` - DB root and application user passwords
@@ -83,11 +82,11 @@ git clone https://github.com/pikaso443/retrans-live
 docker-compose up -d
 docker-compose exec php-cli bash -ilc "cd /var/www/api && composer install && bin/console do:mi:mi --no-interaction"
 docker-compose restart
-docker-compose exec php-cli bash -ilc "cd /var/www/api && bin/console do:fi:lo --no-interaction"
+docker-compose exec php-cli bash -ilc "/var/www/api/bin/console do:fi:lo --no-interaction"
 ```
 
-5. Done!
-- <b>Traefik</b> starts on port `80`, `443`, `8080`. Access `https://TRAEFIK_API_HOST` using browser
+5. Done! :star:
+- <b>Traefik</b> starts on port `80`, `443`, `8080`. Access `https://TRAEFIK_API_HOST` using any browser
 - <b>Nginx</b> starts on port `8082`: [localhost:8082/doc](http://localhost:8082/doc)
 - <b>Mailhog</b> HTTP server starts on port `8025`: [localhost:8025](http://localhost:8025)
 
