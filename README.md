@@ -1,9 +1,8 @@
 # Symfony Clean Architecture
 
-This repository serves as a foundational Clean Architecture template for PHP 7 and Symfony 6, drawing inspiration from [the ideas of Robert C. Martin (Uncle Bob) on Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) and Domain-Driven Design (DDD) by Robert C. Martin.
-Using Symfony OAuth2 Server bundle (league/oauth2-server-bundle), here you can see an example of users api.
+This repository serves as a foundational Symfony Clean Architecture template, drawing inspiration from [the ideas of Robert C. Martin (Uncle Bob) on Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) and Domain-Driven Design (DDD) by Robert C. Martin.
 
-The template demonstrates an exemplary implementation of a users API using the Symfony OAuth2 Server ([league/oauth2-server-bundle](https://github.com/thephpleague/oauth2-server-bundle)) and the Symfony OAuth2 Client ([knpuniversity/oauth2-client-bundle](https://github.com/knpuniversity/oauth2-client-bundle)) bundles.
+The template demonstrates an exemplary implementation of a users API using [Symfony Messenger](https://symfony.com/doc/current/messenger.html), [league/oauth2-server-bundle](https://github.com/thephpleague/oauth2-server-bundle) and [knpuniversity/oauth2-client-bundle](https://github.com/knpuniversity/oauth2-client-bundle) bundles.
 
 It includes the implementation of the `social` grant, designed specifically to handle social login functionalities. By utilizing the `social` grant, users gain the ability to log in to the application using any OAuth2 client provider, such as Telegram. If you wish to integrate additional OAuth2 client providers, you can easily do so by modifying the configuration in [config/packages/knpu_oauth2_client.yaml](api/config/packages/knpu_oauth2_client.yaml).
 
