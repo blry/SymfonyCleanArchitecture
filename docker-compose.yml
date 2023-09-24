@@ -1,7 +1,6 @@
 version: '3.4'
 
 secrets:
-
   db_root_password:
     file: ${DB_ROOT_PASSWORD_FILE}
   db_password:
@@ -15,16 +14,28 @@ secrets:
   telegram_bot_token:
     file: ${TELEGRAM_BOT_TOKEN_FILE}
 
-services:
+networks:
+  intranet:
+    driver: bridge
+  php-fpm:
+    driver: bridge
+  db:
+    driver: bridge
 
+services:
   traefik:
     image: traefik:latest
-    network_mode: host # 80, 443, 8080,
     command:
       - --pilot.token=${TRAEFIK_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./docker/traefik/configs/${CONTAINER_ENV}/traefik.yaml:/etc/traefik/traefik.yaml
+    networks:
+      - intranet
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
 
   nginx:
     build:
@@ -37,12 +48,14 @@ services:
       - ./docker/shared/data/logs/nginx/:/var/log/nginx/
     depends_on:
       - php-fpm
-    network_mode: host # 8082
+    networks:
+      - intranet
+      - php-fpm
     labels:
       - traefik.enable=true
       - traefik.http.routers.dashboard-api.rule=Host(`${TRAEFIK_API_HOST}`)
       - traefik.http.routers.dashboard-api.tls.certresolver=myresolver
-      - traefik.http.services.nginx.loadbalancer.server.port=8082
+      - traefik.http.services.nginx.loadbalancer.server.port=80
 
   php-fpm:
     build:
@@ -82,11 +95,18 @@ services:
       - oauth2_private.key
       - oauth2_public.key
       - telegram_bot_token
-    network_mode: host # 9000
+    networks:
+      - php-fpm
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   mailer:
     image: mailhog/mailhog
-    network_mode: host # 1025, 8025
+    networks:
+      - intranet
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   ofelia:
     image: mcuadros/ofelia:latest
@@ -98,7 +118,7 @@ services:
     command: daemon --config=/etc/ofelia/config.ini
 
   php-cli:
-    container_name: r-php-cli
+    container_name: "${PROJECT_SLUG}-php-cli"
     build:
       context: ./docker/php-cli
       args:
@@ -134,10 +154,13 @@ services:
       - oauth2_private.key
       - oauth2_public.key
       - telegram_bot_token
-    network_mode: host
+    networks:
+      - intranet
+      - db
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   mysql:
-    container_name: r-mysql
     build:
       context: ./docker/mysql
       args:
@@ -160,10 +183,12 @@ services:
     secrets:
       - db_root_password
       - db_password
-    network_mode: host
+    networks:
+      - db
+    ports:
+      - "${DB_APP_PORT:-3306}:${DB_APP_PORT:-3306}"
 
 #  postgres:
-#    container_name: r-postgres
 #    build:
 #      context: ./docker/postgres
 #      args:
@@ -178,8 +203,8 @@ services:
 #      - POSTGRES_USER=postgres
 #      - POSTGRES_PASSWORD_FILE=/run/secrets/db_root_password
 #      - POSTGRES_DB=postgres
-#      - DB_APP_DATABASE
-#      - DB_APP_USER
+#      - DB_APP_DATABASE=${DB_APP_DATABASE}
+#      - DB_APP_USER=${DB_APP_USER}
 #      - DB_APP_PASSWORD_FILE=/run/secrets/db_password
 #    volumes:
 #      - ./docker/postgres/configs/${CONTAINER_ENV}/my.conf:/etc/postgresql/my.conf
@@ -188,9 +213,13 @@ services:
 #    secrets:
 #      - db_root_password
 #      - db_password
-#    network_mode: host
+#    networks:
+#      - db
+#    ports:
+#      - "${DB_APP_PORT:-3306}:${DB_APP_PORT:-3306}"
 
 #  node-cli:
+#    container_name: "${PROJECT_SLUG}-node-cli"
 #    build:
 #      context: ./docker/node-cli
 #      args:
@@ -200,4 +229,7 @@ services:
 #        - NODE_VERSION=${NODE_VERSION}
 #    volumes:
 #      - ./api/:/var/www/api/
-#    network_mode: host
+#    networks:
+#      - intranet
+#    ports:
+#      - "${NODE_APP_PORT:-3000}:3000"
